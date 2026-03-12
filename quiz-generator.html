@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyAI — Generatore di Verifiche</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  .main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background: #0f0f0f;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    z-index: 1000;
+  }
+
+  .main-header .logo {
+    font-family: "Inter", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #0c82c2;
+    letter-spacing: 1px;
+  }
+
+  .main-header nav a {
+    font-family: "Inter", sans-serif;
+    margin-left: 25px;
+    color: #f2f2f2;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s;
+  }
+
+  .main-header nav a:hover {
+    color: #0c82c2;
+  }
+
+  :root {
+    --ink: #1a1412;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --rust: #c0440a;
+    --gold: #d4a843;
+    --sage: #5a7a5c;
+    --muted: #8a7f72;
+    --border: #d4cfc4;
+    --correct: #3d7a42;
+    --wrong: #c0440a;
+    --partial: #d4a843;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image: 
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(212,200,180,0.3) 27px, rgba(212,200,180,0.3) 28px);
+    background-size: 100% 28px;
+  }
+
+  .noise {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 80px 24px; }
+
+  header {
+    display: flex; align-items: baseline; gap: 12px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 16px; margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: -0.5px;
+  }
+
+  header .sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 3px 3px 0 var(--cream), 3px 3px 0 1px var(--border);
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--rust);
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px; font-weight: 500;
+    color: var(--muted); margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; color: var(--ink);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--rust);
+    background: white;
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .counts-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+
+  .count-item label { margin-bottom: 4px; }
+
+  .count-item input[type="number"] {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px; font-weight: 500;
+    color: var(--ink); border-radius: 2px;
+    outline: none; text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .count-item input[type="number"]:focus {
+    border-color: var(--rust); background: white;
+  }
+
+  .count-label {
+    font-size: 11px; color: var(--muted);
+    text-align: center; margin-top: 4px;
+  }
+
+  .file-drop {
+    border: 2px dashed var(--border);
+    background: var(--paper);
+    padding: 24px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .file-drop:hover, .file-drop.drag { border-color: var(--rust); background: #fdf9f4; }
+
+  .file-drop .icon { font-size: 28px; margin-bottom: 8px; }
+
+  .file-drop p { font-size: 13px; color: var(--muted); }
+
+  .file-drop strong { color: var(--rust); }
+
+  .file-list { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .file-tag {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--cream); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 2px;
+    font-size: 12px; font-family: 'DM Mono', monospace;
+  }
+
+  .file-tag button {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 14px; line-height: 1;
+    padding: 0; transition: color 0.15s;
+  }
+
+  .file-tag button:hover { color: var(--rust); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px;
+    background: var(--ink); color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600;
+    border: none; cursor: pointer; border-radius: 2px;
+    transition: all 0.2s; letter-spacing: 0.3px;
+    box-shadow: 3px 3px 0 var(--muted);
+  }
+
+  .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--muted); }
+  .btn:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--muted); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-outline {
+    background: transparent; color: var(--ink);
+    border: 1.5px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--border);
+    font-size: 13px; padding: 10px 20px;
+  }
+
+  .btn-rust { background: var(--rust); box-shadow: 3px 3px 0 #8a2e05; }
+  .btn-rust:hover { box-shadow: 4px 4px 0 #8a2e05; }
+
+  .loader {
+    display: none; text-align: center; padding: 60px 20px;
+  }
+
+  .loader.show { display: block; }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--rust);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader p {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* Quiz area */
+  #quiz-area { display: none; }
+  #quiz-area.show { display: block; }
+
+  .quiz-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 28px;
+  }
+
+  .quiz-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-style: italic;
+  }
+
+  .progress {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .question-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 28px;
+    margin-bottom: 16px;
+    box-shadow: 3px 3px 0 var(--cream), 3px 3px 0 1px var(--border);
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  .q-badge.mc { background: #e8f0ff; color: #3355aa; }
+  .q-badge.tf { background: #fff0e0; color: #aa5500; }
+  .q-badge.open { background: #e8f5e8; color: #2d6b30; }
+
+  .q-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px; color: var(--muted); margin-right: 6px;
+  }
+
+  .q-text {
+    font-size: 16px; line-height: 1.6;
+    margin-bottom: 18px; font-weight: 500;
+  }
+
+  /* Multiple choice */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+
+  .option {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    cursor: pointer; border-radius: 2px;
+    transition: all 0.15s; font-size: 14px;
+  }
+
+  .option:hover:not(.locked) { border-color: var(--ink); background: white; }
+
+  .option .opt-letter {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; font-weight: 500;
+    min-width: 20px; padding-top: 1px;
+    color: var(--muted);
+  }
+
+  .option.selected { border-color: var(--ink); background: var(--cream); }
+  .option.correct { border-color: var(--correct); background: #f0faf0; }
+  .option.correct .opt-letter { color: var(--correct); }
+  .option.wrong { border-color: var(--wrong); background: #fff5f0; }
+  .option.wrong .opt-letter { color: var(--wrong); }
+  .option.locked { cursor: default; }
+
+  /* True/False */
+  .tf-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .tf-btn {
+    padding: 16px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    cursor: pointer; border-radius: 2px;
+    font-size: 22px; text-align: center;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+
+  .tf-btn span { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 400; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+
+  .tf-btn:hover:not(.locked) { border-color: var(--ink); background: white; }
+  .tf-btn.selected { border-color: var(--ink); background: var(--cream); }
+  .tf-btn.correct { border-color: var(--correct); background: #f0faf0; }
+  .tf-btn.wrong { border-color: var(--wrong); background: #fff5f0; }
+  .tf-btn.locked { cursor: default; }
+
+  /* Open */
+  .open-answer {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; line-height: 1.6;
+    color: var(--ink); border-radius: 2px;
+    outline: none; resize: vertical; min-height: 100px;
+    transition: border-color 0.2s;
+  }
+
+  .open-answer:focus { border-color: var(--rust); background: white; }
+
+  .answer-feedback {
+    margin-top: 14px; padding: 14px;
+    border-radius: 2px; font-size: 14px; line-height: 1.6;
+    display: none;
+  }
+
+  .answer-feedback.show { display: block; }
+  .answer-feedback.correct-fb { background: #f0faf0; border: 1px solid #90c895; }
+  .answer-feedback.wrong-fb { background: #fff5f0; border: 1px solid #e8a090; }
+  .answer-feedback.partial-fb { background: #fffbf0; border: 1px solid #e8d090; }
+
+  .fb-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  .correct-fb .fb-label { color: var(--correct); }
+  .wrong-fb .fb-label { color: var(--wrong); }
+  .partial-fb .fb-label { color: var(--partial); }
+
+  .check-btn {
+    margin-top: 14px;
+    padding: 10px 20px;
+    background: var(--sage); color: white;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    border-radius: 2px;
+    box-shadow: 2px 2px 0 #3d5e3f;
+    transition: all 0.15s;
+  }
+
+  .check-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #3d5e3f; }
+  .check-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Results */
+  #results-area { display: none; }
+  #results-area.show { display: block; }
+
+  .results-hero {
+    background: var(--ink); color: white;
+    padding: 40px; text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .results-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 72px; font-weight: 700;
+    line-height: 1;
+  }
+
+  .results-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; opacity: 0.6;
+    margin-top: 8px;
+  }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+
+  .stat {
+    background: white; border: 1px solid var(--border);
+    padding: 16px; text-align: center;
+    box-shadow: 2px 2px 0 var(--cream), 2px 2px 0 1px var(--border);
+  }
+
+  .stat-n {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px; font-weight: 700;
+  }
+
+  .stat-n.c { color: var(--correct); }
+  .stat-n.w { color: var(--wrong); }
+  .stat-n.p { color: var(--gold); }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .error-msg {
+    background: #fff5f0; border: 1px solid #e8a090;
+    padding: 14px; border-radius: 2px;
+    font-size: 14px; color: var(--wrong);
+    margin-top: 12px; display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Result banner on question card after submit */
+  .result-banner {
+    display: none; align-items: center; gap: 8px;
+    margin-top: 14px; padding: 10px 14px;
+    border-radius: 2px; font-size: 13px; font-weight: 600;
+    font-family: 'DM Mono', monospace; letter-spacing: 0.5px;
+  }
+  .result-banner.show { display: flex; }
+  .result-banner.correct-banner { background: #f0faf0; border: 1.5px solid #90c895; color: var(--correct); }
+  .result-banner.wrong-banner { background: #fff5f0; border: 1.5px solid #e8a090; color: var(--wrong); }
+  .result-banner.skipped-banner { background: var(--cream); border: 1.5px solid var(--border); color: var(--muted); }
+  .result-banner .correct-answer-text {
+    font-weight: 400; color: var(--ink);
+    margin-left: 4px;
+  }
+
+  /* question card border after submit */
+  .question-card.result-correct { border-left: 4px solid var(--correct); }
+  .question-card.result-wrong { border-left: 4px solid var(--wrong); }
+  .question-card.result-skipped { border-left: 4px solid var(--border); }
+
+  /* Context button */
+  .ctx-btn {
+    display: none; align-items: center; gap: 6px;
+    margin-top: 10px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1.5px solid var(--gold);
+    color: #8a6800;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer;
+    border-radius: 2px; transition: all 0.15s;
+  }
+  .ctx-btn.show { display: inline-flex; }
+  .ctx-btn:hover { background: #fffbf0; }
+  .ctx-btn.loading { opacity: 0.6; cursor: wait; }
+
+  .ctx-panel {
+    display: none; margin-top: 10px;
+    background: #fffbf0; border: 1px solid #e8d090;
+    padding: 14px; border-radius: 2px;
+    font-size: 13px; line-height: 1.7; color: var(--ink);
+  }
+  .ctx-panel.show { display: block; animation: fadeUp 0.2s ease; }
+  .ctx-panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: #8a6800;
+    margin-bottom: 8px;
+  }
+  .ctx-spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #e8d090; border-top-color: #8a6800;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 600px) {
+    .counts-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .stats-grid { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="wrap">
+
+  <header class="main-header">
+    <div class="logo">Nova AI & Games</div>
+
+    <nav>
+      <a href="../MySite.html">Home</a>
+      <a href="../games.html">Giochi</a>
+      <a href="../ai/assistant.html">Nova AI</a>
+      <a href="../scuola.html">Scuola</a>
+    </nav>
+  </header>
+
+  <header>
+    <h1>StudyAI</h1>
+    <span class="sub">Generatore di Verifiche</span>
+  </header>
+
+  <!-- SETUP FORM -->
+  <div id="setup-area">
+
+    <div class="card">
+      <div class="card-title">① Argomento</div>
+      <label for="topic">Di cosa vuoi essere interrogato?</label>
+      <input type="text" id="topic" placeholder="es. La Rivoluzione Francese, Le equazioni differenziali, L'ecosistema..." />
+      <div style="margin-top:12px">
+        <label for="notes">Note aggiuntive (opzionale)</label>
+        <textarea id="notes" placeholder="Puoi aggiungere dettagli, capitoli specifici, o indicazioni su livello di difficoltà..."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">② Materiale di studio</div>
+      <div class="file-drop" id="file-drop" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📎</div>
+        <p>Trascina qui i tuoi file oppure <strong>clicca per caricarli</strong></p>
+        <p style="margin-top:6px; font-size:11px">PDF, TXT, o qualsiasi file di testo</p>
+      </div>
+      <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.doc,.docx" style="display:none">
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">③ Tipo e numero di domande</div>
+      <div class="counts-grid">
+        <div class="count-item">
+          <label>Scelta multipla</label>
+          <input type="number" id="n-mc" value="4" min="0" max="20">
+          <div class="count-label">domande</div>
+        </div>
+        <div class="count-item">
+          <label>Vero / Falso</label>
+          <input type="number" id="n-tf" value="4" min="0" max="20">
+          <div class="count-label">domande</div>
+        </div>
+        <div class="count-item">
+          <label>Aperte</label>
+          <input type="number" id="n-open" value="2" min="0" max="10">
+          <div class="count-label">domande</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+      <button class="btn btn-rust" onclick="generateQuiz()">
+        <span>✦</span> Genera interrogazione
+      </button>
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>Generazione domande in corso...</p>
+  </div>
+
+  <!-- QUIZ AREA -->
+  <div id="quiz-area">
+    <div class="quiz-header">
+      <div class="quiz-title" id="quiz-title-display">Interrogazione</div>
+      <div class="progress" id="progress-display"></div>
+    </div>
+    <div id="questions-container"></div>
+    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">
+      <button class="btn" onclick="submitQuiz()" id="submit-btn">Consegna e correggi →</button>
+      <button class="btn btn-outline" onclick="resetAll()">✕ Ricomincia</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-area">
+    <div class="results-hero">
+      <div class="results-score" id="score-pct">0%</div>
+      <div class="results-label">Punteggio finale</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-n c" id="r-correct">0</div><div class="stat-label">Corrette</div></div>
+      <div class="stat"><div class="stat-n w" id="r-wrong">0</div><div class="stat-label">Errate</div></div>
+      <div class="stat"><div class="stat-n p" id="r-open">0</div><div class="stat-label">Aperte</div></div>
+    </div>
+    <div id="review-container"></div>
+    <div class="actions" style="margin-top:20px">
+      <button class="btn btn-rust" onclick="generateQuiz()">↻ Nuova interrogazione</button>
+      <button class="btn btn-outline" onclick="reviewAnswers()">↓ Rivedi risposte</button>
+      <button class="btn btn-outline" onclick="resetAll()">← Cambia argomento</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const GROQ_API_KEY = "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";
+let uploadedFiles = [];
+let currentQuiz = [];
+
+// File drag and drop
+const fileDrop = document.getElementById('file-drop');
+const fileInput = document.getElementById('file-input');
+
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault(); fileDrop.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(files) {
+  for (const file of files) {
+    const text = await readFileAsText(file);
+    uploadedFiles.push({ name: file.name, content: text });
+  }
+  renderFileList();
+  fileInput.value = '';
+}
+
+function readFileAsText(file) {
+  return new Promise((res) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.onerror = () => res(`[Impossibile leggere ${file.name}]`);
+    reader.readAsText(file);
+  });
+}
+
+function renderFileList() {
+  const list = document.getElementById('file-list');
+  list.innerHTML = uploadedFiles.map((f, i) => `
+    <div class="file-tag">
+      📄 ${f.name}
+      <button onclick="removeFile(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(i) {
+  uploadedFiles.splice(i, 1);
+  renderFileList();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+async function generateQuiz() {
+  const topic = document.getElementById('topic').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+  const nMC = parseInt(document.getElementById('n-mc').value) || 0;
+  const nTF = parseInt(document.getElementById('n-tf').value) || 0;
+  const nOpen = parseInt(document.getElementById('n-open').value) || 0;
+
+  if (!topic) { showError('Inserisci un argomento per generare le domande.'); return; }
+  if (nMC + nTF + nOpen === 0) { showError('Scegli almeno una domanda da generare.'); return; }
+
+  document.getElementById('setup-area').style.display = 'none';
+  document.getElementById('quiz-area').classList.remove('show');
+  document.getElementById('results-area').classList.remove('show');
+  document.getElementById('loader').classList.add('show');
+
+  let context = `Argomento: ${topic}\n`;
+  if (notes) context += `Note: ${notes}\n`;
+  if (uploadedFiles.length > 0) {
+    context += '\n--- MATERIALE DI STUDIO ---\n';
+    for (const f of uploadedFiles) {
+      context += `\n[File: ${f.name}]\n${f.content.slice(0, 4000)}\n`;
+    }
+    context += '\n--- FINE MATERIALE ---\n';
+  }
+
+  const prompt = `Sei un professore esperto. Basandoti sul seguente contesto, genera un quiz di interrogazione in italiano.
+
+${context}
+
+Genera esattamente:
+- ${nMC} domande a scelta multipla (4 opzioni ciascuna, una sola corretta)
+- ${nTF} domande vero/falso
+- ${nOpen} domande aperte (con risposta modello dettagliata)
+
+Rispondi SOLO con un JSON valido, senza alcun testo prima o dopo, senza backtick markdown.
+Il JSON deve avere questa struttura:
+{
+  "title": "Titolo breve del quiz",
+  "questions": [
+    {
+      "type": "mc",
+      "question": "...",
+      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+      "correct": 0
+    },
+    {
+      "type": "tf",
+      "question": "...",
+      "correct": true
+    },
+    {
+      "type": "open",
+      "question": "...",
+      "model_answer": "Risposta modello dettagliata..."
+    }
+  ]
+}
+
+Genera domande stimolanti e varie, con buona distribuzione di difficoltà.
+Per le scelte multiple, assicurati che i distrattori siano plausibili.
+IMPORTANTE: rispondi SOLO con il JSON, nessun altro testo.`;
+
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const rawText = data.choices[0].message.content;
+    
+    let clean = rawText.replace(/```json|```/g, '').trim();
+    const firstBrace = clean.indexOf('{');
+    const lastBrace = clean.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      clean = clean.slice(firstBrace, lastBrace + 1);
+    }
+
+    const quiz = JSON.parse(clean);
+    currentQuiz = quiz.questions;
+
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('quiz-title-display').textContent = quiz.title || topic;
+    document.getElementById('progress-display').textContent = `${currentQuiz.length} domande`;
+
+    renderQuestions();
+    document.getElementById('quiz-area').classList.add('show');
+
+  } catch (err) {
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('setup-area').style.display = 'block';
+    showError('Errore nella generazione. Riprova tra un momento.');
+    console.error(err);
+  }
+}
+
+function renderQuestions() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+
+  currentQuiz.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'question-card';
+    div.dataset.idx = idx;
+
+    let typeLabel, typeCls, body;
+
+    if (q.type === 'mc') {
+      typeLabel = 'Scelta Multipla'; typeCls = 'mc';
+      body = `<div class="options">
+        ${q.options.map((opt, oi) => `
+          <div class="option" data-q="${idx}" data-o="${oi}" onclick="selectMC(${idx}, ${oi})">
+            <span class="opt-letter">${String.fromCharCode(65+oi)}</span>
+            <span>${opt.replace(/^[A-D]\.\s*/,'')}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    } else if (q.type === 'tf') {
+      typeLabel = 'Vero / Falso'; typeCls = 'tf';
+      body = `<div class="tf-options">
+        <div class="tf-btn" data-q="${idx}" data-v="true" onclick="selectTF(${idx}, true)">
+          ✓ <span>VERO</span>
+        </div>
+        <div class="tf-btn" data-q="${idx}" data-v="false" onclick="selectTF(${idx}, false)">
+          ✗ <span>FALSO</span>
+        </div>
+      </div>`;
+    } else {
+      typeLabel = 'Domanda Aperta'; typeCls = 'open';
+      body = `
+        <textarea class="open-answer" id="open-${idx}" placeholder="Scrivi qui la tua risposta..."></textarea>
+        <button class="check-btn" onclick="checkOpen(${idx})" id="check-${idx}">Verifica risposta con AI</button>
+        <div class="answer-feedback" id="fb-${idx}">
+          <div class="fb-label" id="fb-label-${idx}"></div>
+          <div id="fb-text-${idx}"></div>
+        </div>`;
+    }
+
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px">
+        <span class="q-badge ${typeCls}">${typeLabel}</span>
+        <span class="q-num" style="margin:0; font-family:'DM Mono',monospace; font-size:11px; color:var(--muted)">N°${idx+1}</span>
+      </div>
+      <div class="q-text">${q.question}</div>
+      ${body}
+      <div class="result-banner" id="result-banner-${idx}"></div>
+      <button class="ctx-btn" id="ctx-btn-${idx}" onclick="toggleContext(${idx})">
+        <span>◈</span> Spiega contesto
+      </button>
+      <div class="ctx-panel" id="ctx-panel-${idx}">
+        <div class="ctx-panel-label">📚 Contesto</div>
+        <div id="ctx-text-${idx}"></div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function selectMC(qIdx, optIdx) {
+  const q = currentQuiz[qIdx];
+  if (q._answered) return;
+  // deselect all
+  document.querySelectorAll(`.option[data-q="${qIdx}"]`).forEach(el => el.classList.remove('selected'));
+  q._selected = optIdx;
+  document.querySelector(`.option[data-q="${qIdx}"][data-o="${optIdx}"]`).classList.add('selected');
+}
+
+function selectTF(qIdx, val) {
+  const q = currentQuiz[qIdx];
+  if (q._answered) return;
+  q._selected = val;
+  document.querySelectorAll(`.tf-btn[data-q="${qIdx}"]`).forEach(el => el.classList.remove('selected'));
+  document.querySelector(`.tf-btn[data-q="${qIdx}"][data-v="${val}"]`).classList.add('selected');
+}
+
+async function checkOpen(idx) {
+  const q = currentQuiz[idx];
+  const answer = document.getElementById(`open-${idx}`).value.trim();
+  if (!answer) return;
+
+  const btn = document.getElementById(`check-${idx}`);
+  btn.disabled = true; btn.textContent = 'Valutazione in corso...';
+
+  try {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 500,
+        messages: [{
+          role: "user",
+          content: `Valuta questa risposta a una domanda aperta. Rispondi SOLO con JSON senza backtick.
+
+Domanda: ${q.question}
+Risposta modello: ${q.model_answer}
+Risposta dello studente: ${answer}
+
+JSON da restituire:
+{"verdict":"correct"|"partial"|"wrong","score":0-100,"feedback":"Feedback breve e costruttivo in italiano (2-3 frasi)"}`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/```json|```/g,'').trim();
+    const fb = JSON.parse(raw);
+
+    q._openVerdict = fb.verdict;
+    q._answered = true;
+
+    const fbDiv = document.getElementById(`fb-${idx}`);
+    const fbLabel = document.getElementById(`fb-label-${idx}`);
+    const fbText = document.getElementById(`fb-text-${idx}`);
+
+    fbDiv.className = 'answer-feedback show ' + (fb.verdict === 'correct' ? 'correct-fb' : fb.verdict === 'partial' ? 'partial-fb' : 'wrong-fb');
+    fbLabel.textContent = fb.verdict === 'correct' ? '✓ Ottima risposta' : fb.verdict === 'partial' ? '◐ Risposta parziale' : '✗ Risposta non corretta';
+    fbText.innerHTML = `<div style="margin-bottom:8px">${fb.feedback}</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace">Risposta modello: ${q.model_answer}</div>`;
+
+    btn.style.display = 'none';
+    document.getElementById(`open-${idx}`).disabled = true;
+
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Verifica risposta con AI';
+  }
+}
+
+function submitQuiz() {
+  let correct = 0, wrong = 0, openCount = 0;
+
+  currentQuiz.forEach((q, idx) => {
+    const card = document.querySelector(`.question-card[data-idx="${idx}"]`);
+    const banner = document.getElementById(`result-banner-${idx}`);
+    const ctxBtn = document.getElementById(`ctx-btn-${idx}`);
+
+    if (q.type === 'mc') {
+      const sel = q._selected;
+      document.querySelectorAll(`.option[data-q="${idx}"]`).forEach(el => {
+        el.classList.add('locked');
+        const o = parseInt(el.dataset.o);
+        if (o === q.correct) el.classList.add('correct');
+        else if (o === sel && sel !== q.correct) el.classList.add('wrong');
+      });
+      const correctText = q.options[q.correct].replace(/^[A-D]\.\s*/, '');
+      if (sel === q.correct) {
+        correct++; q._result = 'correct';
+        card.classList.add('result-correct');
+        banner.className = 'result-banner show correct-banner';
+        banner.innerHTML = '✓ Risposta corretta!';
+      } else if (sel !== undefined) {
+        wrong++; q._result = 'wrong';
+        card.classList.add('result-wrong');
+        banner.className = 'result-banner show wrong-banner';
+        banner.innerHTML = `✗ Risposta errata — La risposta corretta era: <span class="correct-answer-text">${correctText}</span>`;
+      } else {
+        wrong++; q._result = 'skipped';
+        card.classList.add('result-skipped');
+        banner.className = 'result-banner show skipped-banner';
+        banner.innerHTML = `— Non risposto — La risposta corretta era: <span class="correct-answer-text">${correctText}</span>`;
+      }
+      ctxBtn.classList.add('show');
+
+    } else if (q.type === 'tf') {
+      document.querySelectorAll(`.tf-btn[data-q="${idx}"]`).forEach(el => {
+        el.classList.add('locked');
+        const v = el.dataset.v === 'true';
+        if (v === q.correct) el.classList.add('correct');
+        else if (v === q._selected && q._selected !== q.correct) el.classList.add('wrong');
+      });
+      const correctText = q.correct ? 'VERO' : 'FALSO';
+      if (q._selected === q.correct) {
+        correct++; q._result = 'correct';
+        card.classList.add('result-correct');
+        banner.className = 'result-banner show correct-banner';
+        banner.innerHTML = '✓ Risposta corretta!';
+      } else if (q._selected !== undefined) {
+        wrong++; q._result = 'wrong';
+        card.classList.add('result-wrong');
+        banner.className = 'result-banner show wrong-banner';
+        banner.innerHTML = `✗ Risposta errata — La risposta corretta era: <span class="correct-answer-text">${correctText}</span>`;
+      } else {
+        wrong++; q._result = 'skipped';
+        card.classList.add('result-skipped');
+        banner.className = 'result-banner show skipped-banner';
+        banner.innerHTML = `— Non risposto — La risposta corretta era: <span class="correct-answer-text">${correctText}</span>`;
+      }
+      ctxBtn.classList.add('show');
+
+    } else {
+      openCount++;
+      ctxBtn.classList.add('show');
+    }
+  });
+
+  const total = currentQuiz.filter(q => q.type !== 'open').length;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  document.getElementById('score-pct').textContent = `${pct}%`;
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = wrong;
+  document.getElementById('r-open').textContent = openCount;
+
+  setTimeout(() => {
+    document.getElementById('quiz-area').classList.remove('show');
+    document.getElementById('results-area').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 600);
+
+  document.getElementById('submit-btn').disabled = true;
+}
+
+function reviewAnswers() {
+  document.getElementById('results-area').classList.remove('show');
+  document.getElementById('quiz-area').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Show a back-to-results button
+  const existingBack = document.getElementById('back-to-results-btn');
+  if (!existingBack) {
+    const backBtn = document.createElement('button');
+    backBtn.id = 'back-to-results-btn';
+    backBtn.className = 'btn btn-outline';
+    backBtn.textContent = '↑ Torna ai risultati';
+    backBtn.onclick = () => {
+      document.getElementById('quiz-area').classList.remove('show');
+      document.getElementById('results-area').classList.add('show');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    document.querySelector('#quiz-area > div:last-child').appendChild(backBtn);
+  }
+}
+
+async function toggleContext(idx) {
+  const q = currentQuiz[idx];
+  const panel = document.getElementById(`ctx-panel-${idx}`);
+  const btn = document.getElementById(`ctx-btn-${idx}`);
+  const textEl = document.getElementById(`ctx-text-${idx}`);
+
+  // Toggle off if already loaded
+  if (panel.classList.contains('show')) {
+    panel.classList.remove('show');
+    btn.innerHTML = '<span>◈</span> Spiega contesto';
+    return;
+  }
+
+  // If already fetched, just show
+  if (q._context) {
+    textEl.innerHTML = q._context;
+    panel.classList.add('show');
+    btn.innerHTML = '<span>◈</span> Nascondi contesto';
+    return;
+  }
+
+  // Fetch from AI
+  btn.classList.add('loading');
+  btn.innerHTML = `<span class="ctx-spinner"></span> Caricamento...`;
+
+  let studyMaterial = '';
+  if (uploadedFiles.length > 0) {
+    studyMaterial = uploadedFiles.map(f => `[${f.name}]\n${f.content.slice(0,3000)}`).join('\n\n');
+  }
+
+  try {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 600,
+        messages: [{
+          role: "user",
+          content: `Sei un tutor. Spiega in modo chiaro e conciso (3-5 frasi) il contesto teorico necessario per rispondere a questa domanda. Usa un linguaggio accessibile a uno studente.
+
+Domanda: ${q.question}
+${q.type === 'mc' ? `Risposta corretta: ${q.options[q.correct]}` : ''}
+${q.type === 'tf' ? `Risposta corretta: ${q.correct ? 'VERO' : 'FALSO'}` : ''}
+${q.type === 'open' ? `Risposta modello: ${q.model_answer}` : ''}
+${studyMaterial ? `\nMateriale di studio disponibile:\n${studyMaterial}` : ''}
+
+Rispondi direttamente con la spiegazione in italiano, senza intestazioni o prefissi.`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.choices[0].message.content.trim();
+    q._context = text;
+
+    textEl.innerHTML = text;
+    panel.classList.add('show');
+    btn.classList.remove('loading');
+    btn.innerHTML = '<span>◈</span> Nascondi contesto';
+
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.innerHTML = '<span>◈</span> Spiega contesto';
+    textEl.innerHTML = 'Errore nel caricamento del contesto.';
+    panel.classList.add('show');
+  }
+}
+
+function resetAll() {
+  currentQuiz = [];
+  document.getElementById('quiz-area').classList.remove('show');
+  document.getElementById('results-area').classList.remove('show');
+  document.getElementById('setup-area').style.display = 'block';
+  document.getElementById('submit-btn').disabled = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

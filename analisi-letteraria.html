@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analisi Letteraria AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .main-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 65px;
+      background: #0f0f0f;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      z-index: 1000;
+    }
+
+    .main-header .logo {
+      font-family: "Inter", sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #0c82c2;
+      letter-spacing: 1px;
+    }
+
+    .main-header nav a {
+      font-family: "Inter", sans-serif;
+      margin-left: 25px;
+      color: #f2f2f2;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+
+    .main-header nav a:hover {
+      color: #0c82c2;
+    }
+
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: #0f0e0c;
+      color: #e8e0d0;
+      min-height: 100vh;
+    }
+
+    .app {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(139,90,43,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(74,50,30,0.15) 0%, transparent 50%),
+        #0f0e0c;
+    }
+
+    .header {
+      text-align: center;
+      padding: 48px 24px 32px;
+      border-bottom: 1px solid rgba(200,170,110,0.2);
+    }
+
+    .header::before {
+      content: '◆';
+      display: block;
+      color: #c8a96e;
+      font-size: 12px;
+      letter-spacing: 8px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 400;
+      color: #e8dcc8;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    h1 em { font-style: italic; color: #c8a96e; }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: 1.05rem;
+      color: #8a7a68;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .section-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #c8a96e;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(200,170,110,0.2);
+    }
+
+    textarea, input[type=password], input[type=number], select {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(200,170,110,0.2);
+      border-radius: 4px;
+      color: #e8e0d0;
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      padding: 14px 18px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    textarea { resize: vertical; }
+
+    textarea:focus, input:focus, select:focus {
+      border-color: rgba(200,170,110,0.5);
+      background: rgba(255,255,255,0.05);
+    }
+
+    textarea::placeholder, input::placeholder { color: #5a4e42; }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8a96e' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 12px;
+      background-color: rgba(255,255,255,0.03);
+    }
+
+    select option { background: #1a1814; color: #e8e0d0; }
+
+    .input-group { margin-bottom: 28px; }
+
+    .row-2 { display: flex; gap: 16px; margin-bottom: 28px; }
+    .col-sm { flex: 0 0 160px; }
+    .col-lg { flex: 1; }
+
+    .questions-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .question-row { display: flex; gap: 10px; align-items: flex-start; }
+
+    .question-num {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: #c8a96e;
+      font-size: 1rem;
+      padding-top: 16px;
+      min-width: 24px;
+      text-align: right;
+    }
+
+    .question-row textarea { min-height: 60px; flex: 1; }
+
+    .remove-btn {
+      background: none;
+      border: 1px solid rgba(200,100,80,0.3);
+      color: rgba(200,100,80,0.6);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 12px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .remove-btn:hover {
+      background: rgba(200,100,80,0.1);
+      border-color: rgba(200,100,80,0.6);
+      color: rgba(200,100,80,0.9);
+    }
+
+    .add-btn {
+      background: none;
+      border: 1px dashed rgba(200,170,110,0.3);
+      color: #8a7a68;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.95rem;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+      border-color: rgba(200,170,110,0.6);
+      color: #c8a96e;
+      background: rgba(200,170,110,0.05);
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #8b5a2b 0%, #c8a96e 50%, #8b5a2b 100%);
+      background-size: 200% 100%;
+      color: #0f0e0c;
+      border: none;
+      padding: 18px 40px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 36px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background-position: right center;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(200,170,110,0.25);
+    }
+
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    details { margin-bottom: 32px; }
+
+    summary {
+      cursor: pointer;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #c8a96e;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: rgba(200,170,110,0.05);
+      border: 1px solid rgba(200,170,110,0.15);
+      border-radius: 4px;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '▾'; }
+    details[open] summary { border-radius: 4px 4px 0 0; }
+    details[open] summary::after { content: '▴'; }
+
+    .prompt-inner {
+      background: rgba(200,170,110,0.03);
+      border: 1px solid rgba(200,170,110,0.15);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      padding: 16px 20px;
+    }
+
+    .prompt-inner textarea {
+      background: rgba(0,0,0,0.2);
+      border-color: rgba(200,170,110,0.1);
+      color: #9a8a72;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      min-height: 220px;
+    }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+    .small-btn {
+      background: rgba(200,170,110,0.08);
+      border: 1px solid rgba(200,170,110,0.25);
+      color: #c8a96e;
+      padding: 7px 16px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+
+    .small-btn:hover { background: rgba(200,170,110,0.18); }
+
+    .hint { margin-top: 8px; font-size: 0.82rem; color: #5a4e42; }
+    .hint a { color: #c8a96e; }
+
+    .result-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(200,170,110,0.2);
+      border-radius: 4px;
+      padding: 32px 36px;
+      margin-top: 40px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-content { font-size: 1.05rem; line-height: 1.85; color: #d8ccba; }
+    .result-content h3 { font-family: 'Playfair Display', serif; color: #c8a96e; font-size: 1.1rem; margin: 24px 0 10px; font-weight: 400; }
+    .result-content strong { color: #e8dcc8; }
+    .result-content hr { border: none; border-top: 1px solid rgba(200,170,110,0.2); margin: 20px 0; }
+    .result-content em { color: #a89878; }
+
+    .copy-result-btn {
+      background: none;
+      border: 1px solid rgba(200,170,110,0.25);
+      color: #8a7a68;
+      padding: 8px 18px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      margin-top: 24px;
+    }
+
+    .copy-result-btn:hover { color: #c8a96e; border-color: rgba(200,170,110,0.5); }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #8a7a68;
+      font-style: italic;
+      font-size: 1.1rem;
+      display: none;
+    }
+
+    .loading.visible { display: block; }
+
+    .error-box {
+      background: rgba(200,80,60,0.08);
+      border: 1px solid rgba(200,80,60,0.3);
+      border-radius: 4px;
+      padding: 16px 20px;
+      color: #d08070;
+      font-size: 0.95rem;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .error-box.visible { display: block; }
+    .hidden { display: none !important; }
+
+    input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; }
+
+    @media (max-width: 600px) {
+      .row-2 { flex-direction: column; }
+      .col-sm { flex: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header class="main-header">
+    <div class="logo">Nova AI & Games</div>
+
+    <nav>
+      <a href="../MySite.html">Home</a>
+      <a href="../games.html">Giochi</a>
+      <a href="../ai/assistant.html">Nova AI</a>
+      <a href="../scuola.html">Scuola</a>
+    </nav>
+  </header>
+
+  <header class="header">
+    <h1>Analisi <em>Letteraria</em></h1>
+    <p class="subtitle">Assistente AI per temi di italiano &middot; Voto massimo garantito</p>
+  </header>
+
+  <div class="container">
+
+    <input type="hidden" id="apiKey" value="" />
+
+    <details>
+      <summary>System Prompt (modificabile)</summary>
+      <div class="prompt-inner">
+        <textarea id="systemPrompt" rows="14" spellcheck="false"></textarea>
+        <div class="btn-row">
+          <button class="small-btn" onclick="copyPrompt()">Copia prompt</button>
+          <button class="small-btn" onclick="resetPrompt()">&#8635; Ripristina originale</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="input-group">
+      <div class="section-label">Classe scolastica</div>
+      <select id="classe">
+        <option value="">Seleziona la classe...</option>
+        <optgroup label="Scuola Media">
+          <option>1&ordf; Media</option>
+          <option>2&ordf; Media</option>
+          <option>3&ordf; Media</option>
+        </optgroup>
+        <optgroup label="Scuola Superiore">
+          <option>1&ordf; Superiore</option>
+          <option>2&ordf; Superiore</option>
+          <option>3&ordf; Superiore</option>
+          <option>4&ordf; Superiore</option>
+          <option>5&ordf; Superiore (Maturit&agrave;)</option>
+        </optgroup>
+        <optgroup label="Universit&agrave;">
+          <option value="Universita primo anno">Universit&agrave; &mdash; primo anno</option>
+          <option value="Universita avanzato">Universit&agrave; &mdash; avanzato</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="row-2">
+      <div class="col-sm">
+        <div class="section-label">Numero di parole</div>
+        <input type="number" id="parole" value="300" min="50" max="2000" placeholder="es. 300" />
+      </div>
+      <div class="col-lg">
+        <div class="section-label">Traccia del tema (opzionale)</div>
+        <textarea id="traccia" rows="2" placeholder="Es. 'Analizza il tema della memoria...' oppure lascia vuoto"></textarea>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="section-label">Testo da analizzare</div>
+      <textarea id="testo" rows="10" placeholder="Incolla qui il testo letterario, l'articolo o il brano da analizzare..."></textarea>
+    </div>
+
+    <div class="input-group">
+      <div class="section-label">Domande</div>
+      <div class="questions-grid" id="domande"></div>
+      <button class="add-btn" onclick="addDomanda()">+ Aggiungi domanda</button>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">&#10022; Analizza e scrivi il tema</button>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="loading" id="loading">Il professore sta elaborando la risposta perfetta...</div>
+
+    <div id="resultBox" class="result-box hidden">
+      <div class="result-content" id="resultContent"></div>
+      <button class="copy-result-btn" id="copyBtn" onclick="copyResult()">&oplus; Copia tutto</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT_DEFAULT = `Sei un professore di italiano esperto con 20 anni di esperienza nelle scuole superiori italiane. Il tuo compito è analizzare testi letterari o articoli e rispondere alle domande in modo eccellente, poi scrivere un tema argomentativo da 10/10.
+## FASE 1 - ANALISI DEL TESTO
+Quando ricevi un testo, esegui:
+- Comprensione globale: identifica tema centrale, struttura, messaggio dell'autore
+- Analisi stilistica: figure retoriche, registro linguistico, tono, scelte lessicali
+- Contestualizzazione: periodo storico, corrente letteraria, biografia dell'autore se rilevante
+- Nuclei tematici: individua i concetti chiave da usare poi nel tema
+## FASE 2 - RISPOSTA ALLE DOMANDE
+Per ogni domanda fornita:
+- Rispondi in modo completo, preciso e articolato
+- Cita solo quando ritieni necessario parole o frasi del testo a supporto della risposta (tra virgolette)
+- Usa un linguaggio formale e curato
+- Struttura la risposta con introduzione, sviluppo e conclusione breve
+- Dimostra capacita critica e interpretativa, non solo descrittiva
+- Connetti la risposta ai temi piu ampi del testo
+## FASE 3 - TEMA ARGOMENTATIVO (lunghezza indicata dall'utente)
+Scrivi un tema argomentativo strettamente connesso al testo (e alla traccia fornita, se presente) con questa struttura:
+1. Introduzione (30-40 parole): aggancia il lettore con una citazione, domanda retorica o affermazione forte; presenta la tesi chiaramente
+2. Argomentazione 1 (60-80 parole): tesi principale con argomentazione solida e riferimento al testo
+3. Argomentazione 2 (60-80 parole): secondo punto di vista, eventuale contro-argomentazione confutata
+4. Argomentazione 3 (60-80 parole): terzo punto di vista, eventuale contro-argomentazione confutata
+5. Conclusione (30-40 parole): sintesi potente, allargamento al contesto contemporaneo, chiusura ad effetto
+CRITERI DI ECCELLENZA:
+- Usa connettivi logici sofisticati: tuttavia, d'altronde, e indubbio che, a tal proposito
+- Inserisci almeno 2 citazioni dal testo originale
+- Varia la struttura delle frasi (brevi e incisive alternate a complesse)
+- Dimostra pensiero critico autonomo, non solo riassunto
+- Il registro deve essere formale-elevato ma non artificioso
+REGOLA SUL CONTEGGIO PAROLE:
+- Rispetta il piu possibile il numero di parole indicato dall'utente
+- Il sistema verifichera automaticamente il conteggio e ti chiedera correzioni se necessario
+FORMATO OUTPUT:
+---
+### ANALISI DEL TESTO
+[analisi]
+### RISPOSTE ALLE DOMANDE
+Domanda 1: [testo domanda]
+[risposta completa]
+Domanda 2: [testo domanda]
+[risposta completa]
+(continua per tutte le domande)
+### TEMA ARGOMENTATIVO
+Titolo: [titolo originale e evocativo]
+[tema del numero di parole richiesto]
+(Conteggio parole: [numero esatto])
+---`;
+
+// Init
+document.getElementById('systemPrompt').value = SYSTEM_PROMPT_DEFAULT;
+const savedKey = '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';
+document.getElementById('apiKey').value = savedKey;
+
+let domandaCount = 0;
+
+function addDomanda() {
+  domandaCount++;
+  var grid = document.getElementById('domande');
+  var idx = grid.children.length + 1;
+  var row = document.createElement('div');
+  row.className = 'question-row';
+  row.id = 'qrow-' + domandaCount;
+  var id = domandaCount;
+  row.innerHTML =
+    '<span class="question-num">' + idx + '.</span>' +
+    '<textarea rows="2" placeholder="Domanda ' + idx + '..." class="domanda-input"></textarea>' +
+    '<button class="remove-btn" onclick="removeDomanda(\'qrow-' + id + '\')">&#215;</button>';
+  grid.appendChild(row);
+}
+
+function removeDomanda(rowId) {
+  var el = document.getElementById(rowId);
+  if (el) el.remove();
+  renumberDomande();
+}
+
+function renumberDomande() {
+  var rows = document.querySelectorAll('.question-row');
+  rows.forEach(function(row, i) {
+    row.querySelector('.question-num').textContent = (i + 1) + '.';
+    row.querySelector('textarea').placeholder = 'Domanda ' + (i + 1) + '...';
+  });
+}
+
+addDomanda();
+addDomanda();
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('systemPrompt').value);
+}
+
+function resetPrompt() {
+  document.getElementById('systemPrompt').value = SYSTEM_PROMPT_DEFAULT;
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^### (.*)/gm, '<h3>$1</h3>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+}
+
+function extractTema(text) {
+  var lines = text.split('\n');
+  var inTema = false;
+  var temaLines = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (/Titolo:/i.test(line)) { inTema = true; continue; }
+    if (inTema) {
+      if (/\(Conteggio/i.test(line)) break;
+      var clean = line
+        .replace(/^#{1,4}\s*/, '')
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/^[-*>]\s*/, '')
+        .replace(/^---+$/, '')
+        .trim();
+      if (clean.length > 0) temaLines.push(clean);
+    }
+  }
+  return temaLines.length > 0 ? temaLines.join(' ') : null;
+}
+
+async function callAPI(messages) {
+  var apiKey = document.getElementById('apiKey').value.trim();
+  var systemPrompt = document.getElementById('systemPrompt').value;
+  var allMessages = [{ role: 'system', content: systemPrompt }].concat(messages);
+  var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 8000,
+      messages: allMessages
+    })
+  });
+  var data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+}
+
+function setLoading(on) {
+  document.getElementById('loading').className = on ? 'loading visible' : 'loading';
+  document.getElementById('submitBtn').disabled = on;
+}
+
+function showError(msg) {
+  var el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.className = 'error-box visible';
+}
+
+function hideError() {
+  document.getElementById('errorBox').className = 'error-box';
+}
+
+function setResult(html) {
+  document.getElementById('resultContent').innerHTML = html;
+  document.getElementById('resultBox').classList.remove('hidden');
+}
+
+var lastRawText = '';
+
+async function handleSubmit() {
+  var testo = document.getElementById('testo').value.trim();
+  var apiKey = document.getElementById('apiKey').value.trim();
+  if (!testo) return;
+  if (!apiKey) { showError('Inserisci la tua API Key Groq.'); return; }
+
+  hideError();
+  setLoading(true);
+  document.getElementById('resultBox').classList.add('hidden');
+
+  var target = parseInt(document.getElementById('parole').value) || 300;
+  var classe = document.getElementById('classe').value;
+  var traccia = document.getElementById('traccia').value.trim();
+  var domande = Array.from(document.querySelectorAll('.domanda-input'))
+    .map(function(t) { return t.value.trim(); }).filter(Boolean);
+
+  var classeInfo = classe ? 'CLASSE: ' + classe + '\nAdatta il livello linguistico alla classe indicata.\n\n' : '';
+  var paroleInfo = 'LUNGHEZZA TEMA: esattamente ' + target + ' parole.\n';
+  var tracciaInfo = traccia ? 'TRACCIA: ' + traccia + '\n\n' : '';
+  var domandeInfo = domande.length > 0
+    ? 'DOMANDE:\n' + domande.map(function(d, i) { return (i+1) + '. ' + d; }).join('\n')
+    : 'Nessuna domanda specifica. Analizza il testo e scrivi il tema argomentativo.';
+
+  var userMsg = classeInfo + paroleInfo + tracciaInfo + 'TESTO DA ANALIZZARE:\n\n' + testo + '\n\n' + domandeInfo;
+
+  try {
+    var text = await callAPI([{ role: 'user', content: userMsg }]);
+
+    var temaMarker = '### TEMA ARGOMENTATIVO';
+    var temaIdx = text.indexOf(temaMarker);
+    var base = temaIdx > -1 ? text.substring(0, temaIdx).trimEnd() : text;
+    var currentTema = temaIdx > -1 ? text.substring(temaIdx) : text;
+
+    var attempts = 0;
+    var MAX = 10;
+
+    while (attempts < MAX) {
+      var temaSection = extractTema(base + '\n\n' + currentTema);
+      var actual = countWords(temaSection || '');
+      var diff = actual - target;
+
+      if (Math.abs(diff) <= 5) {
+        currentTema = currentTema.replace(/\n*\(Conteggio[^)]*\)/gi, '').trimEnd();
+        currentTema += '\n\n(Conteggio parole: ' + actual + ')';
+        break;
+      }
+
+      attempts++;
+      if (attempts >= MAX) {
+        currentTema = currentTema.replace(/\n*\(Conteggio[^)]*\)/gi, '').trimEnd();
+        currentTema += '\n\n(Conteggio parole: ' + actual + ' — obiettivo: ' + target + ')';
+        break;
+      }
+
+      setResult(renderMarkdown(base + '\n\n' + currentTema + '\n\n---\nCorrezione in corso: ' + actual + ' parole rilevate, tentativo ' + attempts + '/' + MAX + '...'));
+      await new Promise(function(r) { setTimeout(r, 1000); });
+
+      var action = diff > 0
+        ? 'CORREZIONE: il tema ha ' + actual + ' parole, ne servono ' + target + ' (+-5). Elimina esattamente ' + diff + ' parole. Riscrivi SOLO il blocco tema:\n\n### TEMA ARGOMENTATIVO\nTitolo: [titolo]\n\n[testo]'
+        : 'CORREZIONE: il tema ha ' + actual + ' parole, ne servono ' + target + ' (+-5). Aggiungi esattamente ' + Math.abs(diff) + ' parole. Riscrivi SOLO il blocco tema:\n\n### TEMA ARGOMENTATIVO\nTitolo: [titolo]\n\n[testo]';
+
+      var corrected = await callAPI([{ role: 'user', content: action + '\n\nTEMA DA CORREGGERE:\n\n' + currentTema }]);
+      var correctedIdx = corrected.indexOf('### TEMA ARGOMENTATIVO');
+      currentTema = correctedIdx > -1 ? corrected.substring(correctedIdx) : corrected;
+    }
+
+    lastRawText = base + '\n\n' + currentTema;
+    setResult(renderMarkdown(lastRawText));
+
+  } catch(e) {
+    showError('Errore: ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(lastRawText);
+  var btn = document.getElementById('copyBtn');
+  btn.textContent = 'Copiato!';
+  setTimeout(function() { btn.innerHTML = '&oplus; Copia tutto'; }, 2000);
+}
+</script>
+</body>
+</html>

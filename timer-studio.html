@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Timer</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 65px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  z-index: 1000;
+}
+
+.main-header .logo {
+  font-family: "Inter", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #0c82c2;
+  letter-spacing: 1px;
+}
+
+.main-header nav a {
+  font-family: "Inter", sans-serif;
+  margin-left: 25px;
+  color: #f2f2f2;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.main-header nav a:hover {
+  color: #0c82c2;
+}
+
+    :root {
+      --bg: #0e0e10;
+      --surface: #18181c;
+      --border: #2a2a30;
+      --accent: #0c82c2;
+      --accent-dim: #8aaa2a;
+      --text: #f0f0f0;
+      --muted: #6b6b75;
+      --danger: #ff5e5b;
+      --work-color: #0c82c2;
+      --break-color: #7bd3ff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding-top: 50px;
+    }
+    .header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .header h1 span {
+      color: var(--accent);
+    }
+
+    /* Mode badge */
+    .mode-badge {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.25rem 1rem;
+      border-radius: 999px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: all 0.4s;
+    }
+    .mode-badge.work  { color: var(--work-color);  border-color: var(--work-color);  }
+    .mode-badge.break { color: var(--break-color); border-color: var(--break-color); }
+
+    /* Main card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 3rem;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    /* SVG ring timer */
+    .ring-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .ring-wrap svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+    .ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 8;
+    }
+    .ring-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    #display {
+      font-family: 'Space Mono', monospace;
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      line-height: 1;
+    }
+    #session-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 1rem;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.6rem;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary {
+      background: var(--accent);
+      color: #0e0e10;
+      min-width: 120px;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+    /* Settings grid */
+    .settings {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .setting-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .setting-block label {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .time-input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      width: 4.8rem;
+      outline: none;
+      caret-color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    .time-input::placeholder { color: var(--border); }
+    .time-input:focus { color: var(--accent); }
+    .setting-row span {
+      color: var(--muted);
+      font-size: 0.7rem;
+      margin-left: auto;
+    }
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-left: auto;
+    }
+    .stepper button {
+      background: var(--border);
+      border: none;
+      color: var(--muted);
+      width: 22px;
+      height: 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s;
+    }
+    .stepper button:hover { background: var(--accent); color: #0e0e10; }
+
+    /* Session counter */
+    .sessions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.8rem 1.2rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .sessions-row span {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      padding: 0.6rem 1.4rem;
+      border-radius: 999px;
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      pointer-events: none;
+      z-index: 99;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="logo">Nova AI & Games</div>
+
+    <nav>
+      <a href="../MySite.html">Home</a>
+      <a href="../games.html">Giochi</a>
+      <a href="../ai/assistant.html">Nova AI</a>
+      <a href="../scuola.html">Scuola</a>
+    </nav>
+  </header>
+
+  <div class="header">
+    <h1>Study <span>Timer</span></h1>
+    <div class="mode-badge" id="modeBadge">Pronto</div>
+  </div>
+
+  <div class="card">
+
+    <!-- Ring timer -->
+    <div class="ring-wrap">
+      <svg viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="100"/>
+        <circle class="ring-progress" id="ring" cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="ring-center">
+        <div id="display">25:00</div>
+        <div id="session-label">sessione</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">▶ Avvia</button>
+      <button class="btn btn-secondary" onclick="resetTimer()">↺ Reset</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings">
+      <div class="setting-block">
+        <label>⚡ Studio</label>
+        <div class="setting-row">
+          <input class="time-input" id="workInput" type="text" value="25:00" maxlength="5" placeholder="MM:SS" autocomplete="off"/>
+          <div class="stepper">
+            <button onclick="adjustTime('workInput', 60)">▲</button>
+            <button onclick="adjustTime('workInput', -60)">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-block">
+        <label>☕ Pausa</label>
+        <div class="setting-row">
+          <input class="time-input" id="breakInput" type="text" value="05:00" maxlength="5" placeholder="MM:SS" autocomplete="off"/>
+          <div class="stepper">
+            <button onclick="adjustTime('breakInput', 60)">▲</button>
+            <button onclick="adjustTime('breakInput', -60)">▼</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sessions counter -->
+    <div class="sessions-row">
+      <span>Sessioni completate</span>
+      <span id="sessionCount" style="font-family:'Space Mono',monospace; font-size:1.3rem; font-weight:700; color:var(--work-color);">0</span>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const CIRCUMFERENCE = 2 * Math.PI * 100; // ~628
+    const ring = document.getElementById('ring');
+    const display = document.getElementById('display');
+    const sessionLabel = document.getElementById('session-label');
+    const startBtn = document.getElementById('startBtn');
+    const modeBadge = document.getElementById('modeBadge');
+
+    let interval = null;
+    let isRunning = false;
+    let isWork = true;
+    let timeLeft = 0;
+    let totalTime = 0;
+    let completedSessions = 0;
+
+    // --- MM:SS input helpers ---
+    function parseMMSS(id) {
+      const val = document.getElementById(id).value.trim();
+      const parts = val.split(':');
+      const m = parseInt(parts[0]) || 0;
+      const s = parts.length > 1 ? (parseInt(parts[1]) || 0) : 0;
+      const total = m * 60 + Math.min(59, s);
+      return id === 'workInput' ? Math.max(1, total) : Math.max(0, total);
+    }
+
+    function toMMSS(secs) {
+      secs = Math.max(0, secs);
+      return `${String(Math.floor(secs / 60)).padStart(2,'0')}:${String(secs % 60).padStart(2,'0')}`;
+    }
+
+    function formatInputOnBlur(id) {
+      const secs = parseMMSS(id);
+      document.getElementById(id).value = toMMSS(secs);
+      if (!isRunning && timeLeft === 0) resetTimer();
+    }
+
+    function handleTimeInput(e, id) {
+      let raw = e.target.value.replace(/[^0-9:]/g, '');
+      if (!raw.includes(':') && raw.length === 2) raw = raw + ':';
+      if (raw.split(':').length > 2) raw = raw.slice(0, raw.lastIndexOf(':'));
+      e.target.value = raw.slice(0, 5);
+    }
+
+    function adjustTime(id, deltaSec) {
+      const cur = parseMMSS(id);
+      const minVal = id === 'workInput' ? 1 : 0;
+      const next = Math.max(minVal, cur + deltaSec);
+      document.getElementById(id).value = toMMSS(next);
+      if (!isRunning && timeLeft === 0) resetTimer();
+    }
+
+    // Attach input events
+    ['workInput','breakInput'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', e => handleTimeInput(e, id));
+      el.addEventListener('blur', () => formatInputOnBlur(id));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+    });
+
+    function getDurations() {
+      return {
+        work: parseMMSS('workInput'),
+        brk:  parseMMSS('breakInput')
+      };
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function updateDisplay(secs) {
+      display.textContent = `${pad(Math.floor(secs/60))}:${pad(secs%60)}`;
+    }
+
+    function updateRing(secs, total) {
+      const ratio = total > 0 ? secs / total : 1;
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+    }
+
+    function updateBadge() {
+      modeBadge.className = 'mode-badge ' + (isWork ? 'work' : 'break');
+      modeBadge.textContent = isWork ? '📚 Sessione di studio' : '☕ Pausa';
+      sessionLabel.textContent = isWork ? 'sessione' : 'pausa';
+      ring.style.stroke = isWork ? 'var(--work-color)' : 'var(--break-color)';
+    }
+
+    function updateDots() {
+      document.getElementById('sessionCount').textContent = completedSessions;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function toggleTimer() {
+      if (!isRunning) {
+        if (timeLeft === 0) {
+          const { work } = getDurations();
+          timeLeft = work;
+          totalTime = work;
+          isWork = true;
+          updateBadge();
+        }
+        isRunning = true;
+        startBtn.textContent = '⏸ Pausa';
+        interval = setInterval(tick, 1000);
+      } else {
+        isRunning = false;
+        startBtn.textContent = '▶ Riprendi';
+        clearInterval(interval);
+      }
+    }
+
+    function tick() {
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        isRunning = false;
+
+        if (isWork) {
+          completedSessions++;
+          updateDots();
+          isWork = false;
+          const { brk } = getDurations();
+
+          if (brk === 0) {
+            // Skip break, wait for user to start next session
+            showToast('🎉 Sessione completata! Premi Avvia per continuare.');
+            isWork = true;
+            const { work } = getDurations();
+            timeLeft = work;
+            totalTime = work;
+            updateBadge();
+            updateDisplay(timeLeft);
+            updateRing(timeLeft, totalTime);
+            startBtn.textContent = '▶ Avvia';
+          } else {
+            showToast('🎉 Sessione completata! Pausa in corso…');
+            timeLeft = brk;
+            totalTime = brk;
+            updateBadge();
+            updateDisplay(timeLeft);
+            updateRing(timeLeft, totalTime);
+            // Auto-start break
+            startBtn.textContent = '⏸ Pausa';
+            isRunning = true;
+            interval = setInterval(tick, 1000);
+          }
+        } else {
+          showToast('⚡ Pausa finita. Torna a studiare!');
+          isWork = true;
+          const { work } = getDurations();
+          timeLeft = work;
+          totalTime = work;
+          updateBadge();
+          updateDisplay(timeLeft);
+          updateRing(timeLeft, totalTime);
+          startBtn.textContent = '▶ Avvia';
+        }
+        return;
+      }
+      timeLeft--;
+      updateDisplay(timeLeft);
+      updateRing(timeLeft, totalTime);
+    }
+
+    function resetTimer() {
+      clearInterval(interval);
+      isRunning = false;
+      isWork = true;
+      timeLeft = 0;
+      const { work } = getDurations();
+      totalTime = work;
+      updateDisplay(work);
+      updateRing(work, work);
+      startBtn.textContent = '▶ Avvia';
+      modeBadge.className = 'mode-badge';
+      modeBadge.textContent = 'Pronto';
+      ring.style.stroke = 'var(--work-color)';
+      sessionLabel.textContent = 'sessione';
+    }
+
+
+
+    // Init
+    const { work } = getDurations();
+    updateDisplay(work);
+    updateRing(work, work);
+    ring.style.strokeDasharray = CIRCUMFERENCE;
+    ring.style.strokeDashoffset = 0;
+  </script>
+</body>
+</html>
