@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reaction Test</title>
+  <link rel="stylesheet" href="../css/MySiteStyle.css">
+
+  <style>
+    .container {
+      margin-top: 30px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #box {
+      width: 300px;
+      height: 300px;
+      background: #1a1a1a;
+      margin: 30px auto;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      border: 1px solid #222;
+      user-select: none;
+    }
+
+    #box.ready {
+      background: #d62828;
+    }
+
+    #box.go {
+      background: #00ff4c;
+      transform: scale(1.02);
+    }
+
+    #result {
+      font-size: 1.4rem;
+      margin-top: 10px;
+    }
+
+    .stats {
+      margin-top: 25px;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .stats p {
+      margin: 4px 0;
+    }
+
+    .leaderboard {
+      margin-top: 15px;
+      background: #151515;
+      padding: 12px 15px;
+      border-radius: 10px;
+      border: 1px solid #222;
+    }
+
+    .leaderboard h3 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+
+    .leaderboard ol {
+      padding-left: 20px;
+      margin: 8px 0 0 0;
+    }
+
+    .leaderboard li {
+      margin: 2px 0;
+    }
+
+    .btn-back {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid #0c82c2;
+      color: #0c82c2;
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+
+    .btn-back:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+
+<script src="js/voiceflow-widget.js"></script>
+
+<body>
+
+  <header class="main-header">
+    <div class="logo">Nova AI & Games</div>
+    <nav>
+      <a href="../MySite.html">Home</a>
+      <a href="../games.html">Giochi</a>
+      <a href="../ai/assistant.html">Nova AI</a>
+      <a href="../scuola.html">Scuola</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div id="box" class="ready">Aspetta...</div>
+    <div id="result"></div>
+
+    <section class="stats">
+      <p><strong>Tentativi:</strong> <span id="attempts">0</span></p>
+      <p><strong>Miglior tempo:</strong> <span id="best-time">—</span></p>
+
+      <div class="leaderboard">
+        <h3>Top 5 tempi migliori</h3>
+        <ol id="leaderboard-list">
+          <!-- Verrà popolata via JS -->
+        </ol>
+      </div>
+    </section>
+
+    <a href="../games.html" class="btn-back">← Torna ai Mini-Giochi</a>
+    <button id="reset-reaction" class="reset-btn">Reset</button>
+  </main>
+
+  <script>
+    const box = document.getElementById("box");
+    const result = document.getElementById("result");
+    const attemptsSpan = document.getElementById("attempts");
+    const bestTimeSpan = document.getElementById("best-time");
+    const leaderboardList = document.getElementById("leaderboard-list");
+
+    let startTime;
+    let timeout;
+    let attempts = 0;
+    let bestTime = null;
+    let leaderboard = [];
+
+    function loadData() {
+      const storedBest = localStorage.getItem("reaction_best_time");
+      const storedAttempts = localStorage.getItem("reaction_attempts");
+      const storedLeaderboard = localStorage.getItem("reaction_leaderboard");
+
+      if (storedBest !== null) {
+        bestTime = Number(storedBest);
+        bestTimeSpan.textContent = bestTime + " ms";
+      } else {
+        bestTimeSpan.textContent = "—";
+      }
+
+      if (storedAttempts !== null) {
+        attempts = Number(storedAttempts);
+        attemptsSpan.textContent = attempts;
+      }
+
+      if (storedLeaderboard !== null) {
+        leaderboard = JSON.parse(storedLeaderboard);
+      }
+
+      renderLeaderboard();
+    }
+
+    function saveData() {
+      localStorage.setItem("reaction_best_time", bestTime);
+      localStorage.setItem("reaction_attempts", attempts);
+      localStorage.setItem("reaction_leaderboard", JSON.stringify(leaderboard));
+    }
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+      if (leaderboard.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "Ancora nessun tempo registrato.";
+        leaderboardList.appendChild(li);
+        return;
+      }
+
+      leaderboard
+        .slice(0, 5)
+        .forEach((time) => {
+          const li = document.createElement("li");
+          li.textContent = time + " ms";
+          leaderboardList.appendChild(li);
+        });
+    }
+
+    function updateStats(reactionTime) {
+      attempts++;
+      attemptsSpan.textContent = attempts;
+
+      if (bestTime === null || reactionTime < bestTime) {
+        bestTime = reactionTime;
+        bestTimeSpan.textContent = bestTime + " ms";
+      }
+
+      leaderboard.push(reactionTime);
+      leaderboard.sort((a, b) => a - b);
+      leaderboard = leaderboard.slice(0, 5);
+
+      renderLeaderboard();
+      saveData();
+    }
+
+    function startGame() {
+      box.classList.remove("go");
+      box.classList.add("ready");
+      box.textContent = "Aspetta...";
+      result.textContent = "";
+
+      const randomTime = Math.random() * 3000 + 1000;
+
+      timeout = setTimeout(() => {
+        box.classList.remove("ready");
+        box.classList.add("go");
+        box.textContent = "CLICCA QUI!";
+        startTime = Date.now();
+      }, randomTime);
+    }
+
+    box.addEventListener("click", () => {
+      if (box.classList.contains("ready")) {
+        result.textContent = "Troppo presto! Aspetta che diventi verde.";
+        clearTimeout(timeout);
+        setTimeout(startGame, 800);
+      } else if (box.classList.contains("go")) {
+        const reactionTime = Date.now() - startTime;
+        result.textContent = `Tempo di reazione: ${reactionTime} ms`;
+        updateStats(reactionTime);
+        setTimeout(startGame, 800);
+      }
+    });
+
+    loadData();
+    startGame();
+  
+  /* RESET STATISTICHE */  
+    document.getElementById("reset-reaction").onclick = () => {
+      if (confirm("Vuoi resettare le statistiche?")) {
+        localStorage.removeItem("reaction_best_time");
+        localStorage.removeItem("reaction_attempts");
+        localStorage.removeItem("reaction_leaderboard");
+        attempts = 0;
+        bestTime = null;
+        leaderboard = [];
+        attemptsSpan.textContent = attempts;
+        bestTimeSpan.textContent = "—";
+        renderLeaderboard();
+      }
+    };
+
+  </script>
+
+</body>
+</html>

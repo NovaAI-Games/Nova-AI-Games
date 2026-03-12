@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Game</title>
+  <link rel="stylesheet" href="../css/MySiteStyle.css">
+
+  <style>
+    .memory-container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    /* Schermata iniziale */
+    .start-screen {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .mode-btn {
+      display: block;
+      margin: 15px auto;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .mode-btn:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+
+    /* Gioco */
+    .stats {
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #222;
+      cursor: pointer;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.4s;
+    }
+
+    .card.flip {
+      transform: rotateY(180deg);
+    }
+
+    .card .front,
+    .card .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+    }
+
+    .card .front {
+      background: #0c82c2;
+      transform: rotateY(180deg);
+    }
+
+    .card .back {
+      background: #1a1a1a;
+    }
+
+    /* Leaderboard */
+    .leaderboard {
+      margin-top: 25px;
+      background: #151515;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #222;
+      text-align: left;
+    }
+
+    .leaderboard h3 {
+      margin-bottom: 10px;
+    }
+
+    /* Pulsanti */
+    .btn-restart {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-restart:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+  </style>
+</head>
+
+<script src="js/voiceflow-widget.js"></script>
+
+<body>
+
+<header class="main-header">
+  <div class="logo">Nova AI & Games</div>
+  <nav>
+    <a href="../MySite.html">Home</a>
+    <a href="../games.html">Giochi</a>
+    <a href="../ai/assistant.html">Nova AI</a>
+    <a href="../scuola.html">Scuola</a>
+  </nav>
+</header>
+
+<main class="memory-container">
+
+  <!-- Schermata iniziale -->
+  <div id="start-screen" class="start-screen">
+    <h2>Scegli la modalità</h2>
+
+    <button class="mode-btn" onclick="selectMode('easy')">Facile (4×4)</button>
+    <button class="mode-btn" onclick="selectMode('medium')">Medio (5×4)</button>
+    <button class="mode-btn" onclick="selectMode('hard')">Difficile (6×6)</button>
+
+    <a href="../games.html" class="btn-back">← Torna ai Mini-Giochi</a>
+
+  </div>
+
+  <!-- Area di gioco -->
+  <div id="game-area" style="display:none;">
+
+    <div class="stats">
+      <p><strong>Mosse:</strong> <span id="moves">0</span></p>
+      <p><strong>Tempo:</strong> <span id="timer">0</span> secondi</p>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="leaderboard">
+      <h3>Leaderboard</h3>
+      <p><strong>Miglior tempo:</strong> <span id="best-time">—</span></p>
+      <p><strong>Migliori mosse:</strong> <span id="best-moves">—</span></p>
+    </div>
+
+    <button class="btn-restart" onclick="startGame()">Rigioca stessa modalità</button>
+    <button class="btn-restart" onclick="returnToMenu()">Torna al menu</button>
+
+  </div>
+
+</main>
+
+<script>
+  const grid = document.getElementById("grid");
+  const movesSpan = document.getElementById("moves");
+  const timerSpan = document.getElementById("timer");
+  const bestTimeSpan = document.getElementById("best-time");
+  const bestMovesSpan = document.getElementById("best-moves");
+
+  let moves = 0;
+  let timer = 0;
+  let timerInterval;
+  let firstCard = null;
+  let lockBoard = false;
+  let matchedPairs = 0;
+  let currentDifficulty = "easy";
+
+  const icons = ["🍀","🔥","⭐","🌙","⚡","💎","🎵","🌈","🍎","🎮","🐱","🚀","🌻","❄️","🍩","🎲","🧠","🦊"];
+
+  const difficulties = {
+    easy: { rows: 4, cols: 4, pairs: 8 },
+    medium: { rows: 4, cols: 5, pairs: 10 },
+    hard: { rows: 6, cols: 6, pairs: 18 }
+  };
+
+  function selectMode(mode) {
+    currentDifficulty = mode;
+
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("game-area").style.display = "block";
+
+    startGame();
+  }
+
+  function returnToMenu() {
+    clearInterval(timerInterval);
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("start-screen").style.display = "block";
+  }
+
+  function loadLeaderboard(diff) {
+    const bestTime = localStorage.getItem(`memory_best_time_${diff}`);
+    const bestMoves = localStorage.getItem(`memory_best_moves_${diff}`);
+
+    bestTimeSpan.textContent = bestTime ? bestTime + "s" : "—";
+    bestMovesSpan.textContent = bestMoves ? bestMoves : "—";
+  }
+
+  function saveLeaderboard(diff, time, moves) {
+    const bestTime = localStorage.getItem(`memory_best_time_${diff}`);
+    const bestMoves = localStorage.getItem(`memory_best_moves_${diff}`);
+
+    if (!bestTime || time < bestTime) {
+      localStorage.setItem(`memory_best_time_${diff}`, time);
+    }
+
+    if (!bestMoves || moves < bestMoves) {
+      localStorage.setItem(`memory_best_moves_${diff}`, moves);
+    }
+  }
+
+  function startGame() {
+    const diff = currentDifficulty;
+    const { rows, cols, pairs } = difficulties[diff];
+
+    grid.style.gridTemplateColumns = `repeat(${cols}, 100px)`;
+
+    grid.innerHTML = "";
+    moves = 0;
+    timer = 0;
+    matchedPairs = 0;
+    movesSpan.textContent = moves;
+    timerSpan.textContent = timer;
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timer++;
+      timerSpan.textContent = timer;
+    }, 1000);
+
+    loadLeaderboard(diff);
+
+    const selectedIcons = icons.slice(0, pairs);
+    const cards = [...selectedIcons, ...selectedIcons]
+      .sort(() => Math.random() - 0.5)
+      .map(icon => createCard(icon));
+
+    cards.forEach(card => grid.appendChild(card));
+  }
+
+  function createCard(icon) {
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.style.width = "100px";
+    card.style.height = "100px";
+
+    card.innerHTML = `
+      <div class="front">${icon}</div>
+      <div class="back"></div>
+    `;
+
+    card.addEventListener("click", () => flipCard(card, icon));
+    return card;
+  }
+
+  function flipCard(card, icon) {
+    if (lockBoard || card.classList.contains("flip")) return;
+
+    card.classList.add("flip");
+
+    if (!firstCard) {
+      firstCard = { card, icon };
+      return;
+    }
+
+    moves++;
+    movesSpan.textContent = moves;
+
+    if (firstCard.icon === icon) {
+      matchedPairs++;
+      firstCard = null;
+
+      const diff = currentDifficulty;
+      const { pairs } = difficulties[diff];
+
+      if (matchedPairs === pairs) {
+        clearInterval(timerInterval);
+        saveLeaderboard(diff, timer, moves);
+        loadLeaderboard(diff);
+      }
+
+    } else {
+      lockBoard = true;
+      setTimeout(() => {
+        card.classList.remove("flip");
+        firstCard.card.classList.remove("flip");
+        firstCard = null;
+        lockBoard = false;
+      }, 800);
+    }
+  }
+</script>
+
+</body>
+</html>

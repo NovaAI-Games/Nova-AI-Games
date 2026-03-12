@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Game AI</title>
+  <link rel="stylesheet" href="../css/MySiteStyle.css">
+
+  <style>
+    .quiz-container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .start-screen {
+      margin-top: 40px;
+    }
+
+    .level-btn {
+      display: block;
+      margin: 15px auto;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .level-btn:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+
+    .question-box {
+      margin-top: 25px;
+      background: #151515;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #222;
+      text-align: left;
+      min-height: 140px;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+    }
+
+    .answers {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .answers li {
+      margin: 8px 0;
+    }
+
+    .answer-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #f2f2f2;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .answer-btn:hover {
+      background: #222;
+    }
+
+    .stats {
+      margin-top: 15px;
+      font-size: 0.95rem;
+    }
+
+    .lives {
+      margin-top: 5px;
+    }
+
+    .life {
+      color: #d62828;
+      font-size: 1.2rem;
+      margin: 0 2px;
+    }
+
+    .leaderboard {
+      margin-top: 25px;
+      background: #151515;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #222;
+      text-align: left;
+    }
+
+    .btn-quiz {
+      margin-top: 15px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-quiz:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+
+    .result-message {
+      margin-top: 20px;
+      font-size: 1.1rem;
+    }
+
+    .loading {
+      opacity: 0.7;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="main-header">
+  <div class="logo">Nova AI & Games</div>
+  <nav>
+    <a href="../MySite.html">Home</a>
+    <a href="../games.html">Giochi</a>
+    <a href="../ai/assistant.html">Nova AI</a>
+    <a href="../scuola.html">Scuola</a>
+  </nav>
+</header>
+
+<main class="quiz-container">
+
+  <!-- Schermata iniziale -->
+  <div id="start-screen" class="start-screen">
+    <h2>Quiz Game con AI</h2>
+    <p>Scegli il livello. Le domande vengono generate dalla tua AI.</p>
+
+    <button class="level-btn" onclick="selectLevel('easy')">Facile</button>
+    <button class="level-btn" onclick="selectLevel('medium')">Medio</button>
+    <button class="level-btn" onclick="selectLevel('hard')">Difficile</button>
+
+    <a href="../games.html" class="btn-back">← Torna ai Mini-Giochi</a>
+
+  </div>
+
+  <!-- Area di gioco -->
+  <div id="game-area" style="display:none;">
+    <h2 id="level-title"></h2>
+
+    <div class="stats">
+      <p><strong>Tempo:</strong> <span id="timer">0</span> secondi</p>
+      <p><strong>Domanda:</strong> <span id="question-index">0</span>/<span id="question-total">10</span></p>
+      <p><strong>Punteggio:</strong> <span id="score">0</span></p>
+      <div class="lives">
+        <strong>Vite:</strong> <span id="lives"></span>
+      </div>
+    </div>
+
+    <div class="question-box">
+      <p id="question-text" class="question-text"></p>
+      <ul id="answers" class="answers"></ul>
+      <p id="loading" class="loading"></p>
+    </div>
+
+    <p id="result-message" class="result-message"></p>
+
+    <div class="leaderboard">
+      <h3>Leaderboard</h3>
+      <p><strong>Miglior punteggio:</strong> <span id="best-score">—</span></p>
+      <p><strong>Miglior tempo:</strong> <span id="best-time">—</span></p>
+    </div>
+
+    <button class="btn-quiz" onclick="restartSameLevel()">Rigioca stesso livello</button>
+    <button class="btn-quiz" onclick="returnToMenu()">Torna al menu</button>
+  </div>
+
+</main>
+
+<script>
+  // ==========================
+  // CONFIG GROQ
+  // ==========================
+  // Nota: questa chiave viene esposta nel codice client. Per sicurezza in produzione usa un proxy server.
+  const GROQ_API_KEY = "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";
+
+  // ==========================
+  // ELEMENTI DOM
+  // ==========================
+  const timerSpan = document.getElementById("timer");
+  const questionText = document.getElementById("question-text");
+  const answersList = document.getElementById("answers");
+  const questionIndexSpan = document.getElementById("question-index");
+  const questionTotalSpan = document.getElementById("question-total");
+  const livesSpan = document.getElementById("lives");
+  const resultMessage = document.getElementById("result-message");
+  const bestScoreSpan = document.getElementById("best-score");
+  const bestTimeSpan = document.getElementById("best-time");
+  const levelTitle = document.getElementById("level-title");
+  const loadingText = document.getElementById("loading");
+  const scoreSpan = document.getElementById("score");
+
+  // ==========================
+  // STATO DI GIOCO
+  // ==========================
+  let currentLevel = "easy";
+  let currentIndex = 0;
+  let maxQuestions = 10;
+  let lives = 5;
+  let timer = 0;
+  let timerInterval;
+  let gameOver = false;
+  let score = 0;
+
+  const levelNames = { easy: "Facile", medium: "Medio", hard: "Difficile" };
+
+  // ==========================
+  // SELEZIONE LIVELLO
+  // ==========================
+  function selectLevel(level) {
+    currentLevel = level;
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("game-area").style.display = "block";
+
+    levelTitle.textContent = "Livello " + levelNames[level];
+    
+    startGame();
+  }
+
+  function startGame() {
+    currentIndex = 0;
+    lives = 5;
+    timer = 0;
+    score = 0;
+    gameOver = false;
+    scoreSpan.textContent = score;
+    resultMessage.textContent = "";
+
+    timerSpan.textContent = timer;
+    livesSpan.innerHTML = " " + "❤".repeat(lives);
+    questionTotalSpan.textContent = maxQuestions;
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timer++;
+      timerSpan.textContent = timer;
+    }, 1000);
+    loadingText.textContent = "";
+    loadLeaderboard();
+    loadNextQuestion();
+  }
+
+  function restartSameLevel() {
+    startGame();
+  }
+
+  function returnToMenu() {
+    clearInterval(timerInterval);
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("start-screen").style.display = "block";
+  }
+
+  // ==========================
+  // LOGICA DOMANDE
+  // ==========================
+  async function loadNextQuestion() {
+    if (gameOver) return;
+
+    if (currentIndex >= maxQuestions) {
+      endGame(true);
+      return;
+    }
+
+    currentIndex++;
+    questionIndexSpan.textContent = currentIndex;
+
+    questionText.textContent = "";
+    answersList.innerHTML = "";
+    loadingText.textContent = "Sto chiedendo una nuova domanda alla tua AI...";
+
+    try {
+      const q = await fetchQuestionFromAI(currentLevel);
+
+      loadingText.textContent = "";
+
+      if (!q || !q.question || !q.answers || typeof q.correctIndex !== "number") {
+        questionText.textContent = "Errore nel formato della domanda ricevuta dall'AI.";
+        return;
+      }
+
+      renderQuestion(q);
+
+    } catch (err) {
+      console.error(err);
+      loadingText.textContent = "";
+      questionText.textContent = `Errore nel contattare l'AI: ${err.message}`;
+    }
+  }
+
+  function renderQuestion(q) {
+    questionText.textContent = q.question;
+    answersList.innerHTML = "";
+
+    q.answers.forEach((ans, idx) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.classList.add("answer-btn");
+      btn.textContent = ans;
+      btn.onclick = () => handleAnswer(idx, q.correctIndex);
+      li.appendChild(btn);
+      answersList.appendChild(li);
+    });
+  }
+
+  function handleAnswer(selectedIndex, correctIndex) {
+    if (gameOver) return;
+
+    if (selectedIndex === correctIndex) {
+      score += 100;
+      scoreSpan.textContent = score;
+    } else {
+      lives--;
+      livesSpan.innerHTML = " " + "❤".repeat(lives);
+      if (score < 0) score = 0;
+      scoreSpan.textContent = score;
+
+      if (lives <= 0) {
+        endGame(false);
+      }
+    }
+    loadNextQuestion();
+  }
+
+  // ==========================
+  // FINE PARTITA + PUNTEGGIO
+  // ==========================
+  function endGame(won) {
+    gameOver = true;
+    clearInterval(timerInterval);
+
+    const finalScore = Math.max(0, 5000 - timer * 20) + lives * 200 + score;
+    scoreSpan.textContent = finalScore;
+
+    if (score == 0) finalScore = 0; // se non hai fatto punti, il punteggio finale è 0
+
+    if (won) {
+      resultMessage.textContent = `Hai completato il quiz! Tempo: ${timer}s | Vite rimaste: ${lives} | Punteggio: ${finalScore}`;
+      saveLeaderboard(finalScore, timer);
+      loadLeaderboard();
+    } else if (lives <= 0) {
+      resultMessage.textContent = `Hai esaurito le vite. Punteggio finale: ${finalScore}. Riprova!`;
+      saveLeaderboard(finalScore, timer);
+      loadLeaderboard();
+    }
+  }
+
+  // ==========================
+  // LEADERBOARD (per livello)
+  // ==========================
+  function loadLeaderboard() {
+    const bestScore = localStorage.getItem("quiz_best_score_" + currentLevel);
+    const bestTime = localStorage.getItem("quiz_best_time_" + currentLevel);
+
+    bestScoreSpan.textContent = bestScore ? bestScore : "—";
+    bestTimeSpan.textContent = bestTime ? bestTime + "s" : "—";
+  }
+
+  function saveLeaderboard(finalScore, finalTime) {
+    const bestScore = localStorage.getItem("quiz_best_score_" + currentLevel);
+
+    if (!bestScore || finalScore > parseInt(bestScore)) {
+      localStorage.setItem("quiz_best_score_" + currentLevel, finalScore);
+      localStorage.setItem("quiz_best_time_" + currentLevel, finalTime);
+    }
+  }
+
+  // ==========================
+  // CHIAMATA ALL'AI (GROQ)
+  // ==========================
+  async function fetchQuestionFromAI(level) {
+    const difficultyLabel =
+      level === "easy" ? "FACILE" :
+      level === "medium" ? "MEDIA" : 
+      "DIFFICILE";
+      
+    const prompt = `
+Genera una domanda a scelta multipla di difficoltà ${difficultyLabel}.
+IMPORTANTE: Fornisci tutte e 10 le domande DIVERSE l'une dalle altre, anche se ti vengono richieste più domande dello stesso livello.
+La domanda deve essere chiara e non ambigua. Fornisci 4 risposte, di cui solo una è corretta. Le risposte devono essere plausibili e non troppo simili tra loro.
+Rispondi SOLO con un JSON valido, senza alcun testo prima o dopo, senza backtick markdown.
+Il JSON deve avere questa struttura:
+
+{
+  "question": "testo della domanda",
+  "answers": ["risposta 1", "risposta 2", "risposta 3", "risposta 4"],
+  "correctIndex": 0  // indice (0-3) della risposta corretta
+}
+
+IMPORTANTISSIMO: Se hai generato una domanda identica a una di quelle precedenti, rigenera finché non ottieni una domanda diversa.
+Consegui a generare domande finché non ne hai fornite 10 DIVERSE per ogni livello di difficoltà (facile, medio, difficile).
+`;
+    //https://api.groq.dev/v1/engines/groq.2/completions
+    //https://api.groq.com/openai/v1/chat/completions
+    let response;
+
+    try {
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 4000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+    } catch (err) {
+      console.error("Errore nella chiamata fetch:", err);
+      throw new Error("Errore di rete o CORS: " + err.message);
+    }
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(`HTTP ${response.status} ${response.statusText} - ${errText}`);
+    }
+
+    const data = await response.json();
+
+    // Groq può restituire i risultati in formati diversi.
+    // Proviamo alcune strade comuni e, in caso, logghiamo l'intero oggetto.
+    const textOutput =
+      data?.choices?.[0]?.text ||
+      data?.choices?.[0]?.message?.content ||
+      data?.output?.[0]?.content ||
+      data?.message?.content ||
+      data?.text;
+
+    if (!textOutput) {
+      console.error("Risposta Groq non valida:", data);
+      throw new Error("Nessun testo trovato nella risposta dell'AI");
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(textOutput);
+    } catch (e) {
+      console.error("Testo ricevuto dall'AI:", textOutput);
+      throw new Error("Impossibile fare il parse del JSON dalla risposta dell'AI");
+    }
+
+    return parsed;
+  }
+</script>
+
+</body>
+</html>

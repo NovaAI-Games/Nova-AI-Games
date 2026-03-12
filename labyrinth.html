@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labirinto</title>
+  <link rel="stylesheet" href="../css/MySiteStyle.css">
+
+  <style>
+    .lab-container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* Schermata iniziale */
+    .start-screen {
+      margin-top: 40px;
+    }
+
+    .level-btn {
+      display: block;
+      margin: 15px auto;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .level-btn:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+
+    /* Canvas */
+    #lab-canvas {
+      background: #111;
+      border: 2px solid #0c82c2;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    /* Mini-mappa */
+    #mini-map {
+      margin-top: 20px;
+      border: 1px solid #0c82c2;
+      background: #000;
+    }
+
+    .lab-info {
+      margin-top: 15px;
+      font-size: 0.95rem;
+      color: #ccc;
+    }
+
+    .lab-win {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #0c82c2;
+    }
+
+    .btn-restart {
+      margin-top: 15px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid #0c82c2;
+      background: transparent;
+      color: #0c82c2;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-restart:hover {
+      background: #0c82c2;
+      color: #0d0d0d;
+    }
+
+    .leaderboard {
+      margin-top: 25px;
+      background: #151515;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #222;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<script src="js/voiceflow-widget.js"></script>
+
+<body>
+
+<header class="main-header">
+  <div class="logo">Nova AI & Games</div>
+  <nav>
+    <a href="../MySite.html">Home</a>
+    <a href="../games.html">Giochi</a>
+    <a href="../ai/assistant.html">Nova AI</a>
+    <a href="../scuola.html">Scuola</a>
+  </nav>
+</header>
+
+<main class="lab-container">
+
+  <!-- Schermata iniziale -->
+  <div id="start-screen" class="start-screen">
+    <h2>Scegli il livello</h2>
+
+    <button class="level-btn" onclick="selectLevel(1)">Livello 1 (Facile)</button>
+    <button class="level-btn" onclick="selectLevel(2)">Livello 2 (Medio)</button>
+    <button class="level-btn" onclick="selectLevel(3)">Livello 3 (Difficile)</button>
+
+    <a href="../games.html" class="btn-back">← Torna ai Mini-Giochi</a>
+
+  </div>
+
+  <!-- Area di gioco -->
+  <div id="game-area" style="display:none;">
+    <h2 id="level-title"></h2>
+
+    <p><strong>Tempo:</strong> <span id="timer">0</span> secondi</p>
+
+    <canvas id="lab-canvas" width="480" height="480"></canvas>
+
+    <canvas id="mini-map" width="120" height="120"></canvas>
+
+    <p class="lab-info">🟦 Tu | 🟥 Uscita | ▓ Muri</p>
+    <p id="lab-win" class="lab-win"></p>
+
+    <div class="leaderboard">
+      <h3>Leaderboard</h3>
+      <p><strong>Miglior tempo:</strong> <span id="best-time">—</span></p>
+    </div>
+
+    <button class="btn-restart" onclick="resetGame()">Ricomincia</button>
+    <button class="btn-restart" onclick="returnToMenu()">Torna al menu</button>
+  </div>
+
+</main>
+
+<script>
+  const canvas = document.getElementById("lab-canvas");
+  const ctx = canvas.getContext("2d");
+
+  const mini = document.getElementById("mini-map");
+  const miniCtx = mini.getContext("2d");
+
+  const winText = document.getElementById("lab-win");
+  const timerSpan = document.getElementById("timer");
+  const bestTimeSpan = document.getElementById("best-time");
+
+  let timer = 0;
+  let timerInterval;
+  let currentLevel = 1;
+
+  const tileSize = 40;
+  const rows = 12;
+  const cols = 12;
+
+  const levels = {
+    1: [
+      [2,0,1,0,0,0,1,0,0,0,0,0],
+      [1,0,1,0,1,0,1,0,1,1,1,0],
+      [0,0,0,0,1,0,0,0,0,0,1,0],
+      [0,1,1,1,1,1,1,1,1,0,1,0],
+      [0,1,0,0,0,0,0,0,1,0,1,0],
+      [0,1,0,1,1,1,1,0,1,0,1,0],
+      [0,0,0,1,0,0,0,0,1,0,0,0],
+      [1,1,0,1,0,1,1,1,1,1,1,0],
+      [0,0,0,0,0,1,0,0,0,0,0,0],
+      [0,1,1,1,0,1,0,1,1,1,1,0],
+      [0,0,0,1,0,0,0,0,0,0,3,0],
+      [0,1,0,0,0,1,1,1,1,0,1,0]
+    ],
+
+    2: [
+      [2,1,1,1,1,1,1,1,1,1,1,0],
+      [0,0,0,0,0,0,1,0,0,0,1,0],
+      [1,1,1,1,1,0,1,0,1,0,1,0],
+      [0,0,0,0,1,0,0,0,1,0,1,0],
+      [0,1,1,0,1,1,1,0,1,0,1,0],
+      [0,1,0,0,0,0,1,0,1,0,1,0],
+      [0,1,0,1,1,0,1,0,1,0,1,0],
+      [0,1,0,1,0,0,0,0,1,0,1,0],
+      [0,1,0,1,0,1,1,1,1,0,1,0],
+      [0,1,0,0,0,0,0,0,0,0,1,0],
+      [0,1,1,1,1,1,1,1,1,0,3,0],
+      [0,0,0,0,0,0,0,0,0,0,1,0]
+    ],
+
+    3: [
+      [2,1,1,1,1,1,1,1,1,1,1,1],
+      [0,0,0,0,0,0,1,0,0,0,0,1],
+      [1,1,1,1,1,0,1,0,1,1,0,1],
+      [1,0,0,0,1,0,1,0,1,0,0,1],
+      [1,0,1,0,1,0,1,0,1,0,1,1],
+      [1,0,1,0,0,0,1,0,1,0,0,0],
+      [1,0,1,1,1,1,1,0,1,1,1,0],
+      [1,0,0,0,0,0,0,0,0,0,1,0],
+      [1,1,1,1,1,1,1,1,1,0,1,0],
+      [0,0,0,0,0,0,0,0,1,0,1,0],
+      [0,1,1,1,1,1,1,0,1,0,3,0],
+      [0,0,0,0,0,0,0,0,1,0,1,0]
+    ]
+  };
+
+  let maze = [];
+  let player = { x: 0, y: 0 };
+  let finish = { x: 0, y: 0 };
+
+  function selectLevel(level) {
+    currentLevel = level;
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("game-area").style.display = "block";
+    document.getElementById("level-title").textContent = "Livello " + level;
+    startGame();
+  }
+
+  function returnToMenu() {
+    clearInterval(timerInterval);
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("start-screen").style.display = "block";
+  }
+
+  function startGame() {
+    maze = JSON.parse(JSON.stringify(levels[currentLevel]));
+    timer = 0;
+    timerSpan.textContent = 0;
+    winText.textContent = "";
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timer++;
+      timerSpan.textContent = timer;
+    }, 1000);
+
+    initPositions();
+    loadLeaderboard();
+    drawMaze();
+    drawMiniMap();
+  }
+
+  function initPositions() {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (maze[y][x] === 2) {
+          player.x = x;
+          player.y = y;
+        }
+        if (maze[y][x] === 3) {
+          finish.x = x;
+          finish.y = y;
+        }
+      }
+    }
+  }
+
+  function drawMaze() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const tile = maze[y][x];
+
+        if (tile === 1) {
+          ctx.fillStyle = "#222";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        } else if (tile === 3) {
+          ctx.fillStyle = "#d62828";
+          ctx.fillRect(x * tileSize + 8, y * tileSize + 8, tileSize - 16, tileSize - 16);
+        }
+      }
+    }
+
+    ctx.fillStyle = "#2a9d8f";
+    ctx.fillRect(player.x * tileSize + 8, player.y * tileSize + 8, tileSize - 16, tileSize - 16);
+  }
+
+  function drawMiniMap() {
+    miniCtx.clearRect(0, 0, mini.width, mini.height);
+
+    const scale = 10;
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const tile = maze[y][x];
+
+        if (tile === 1) miniCtx.fillStyle = "#333";
+        else if (tile === 3) miniCtx.fillStyle = "#d62828";
+        else miniCtx.fillStyle = "#000";
+
+        miniCtx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+
+    miniCtx.fillStyle = "#2a9d8f";
+    miniCtx.fillRect(player.x * scale, player.y * scale, scale, scale);
+  }
+
+  function canMove(x, y) {
+    if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
+    return maze[y][x] !== 1;
+  }
+
+  function handleMove(dx, dy) {
+    if (winText.textContent) return;
+
+    const newX = player.x + dx;
+    const newY = player.y + dy;
+
+    if (!canMove(newX, newY)) return;
+
+    player.x = newX;
+    player.y = newY;
+
+    if (player.x === finish.x && player.y === finish.y) {
+      winText.textContent = "Hai completato il livello! 🎉";
+      clearInterval(timerInterval);
+      saveLeaderboard();
+    }
+
+    drawMaze();
+    drawMiniMap();
+  }
+
+  document.addEventListener("keydown", (e) => {
+    switch (e.key) {
+      case "ArrowUp": handleMove(0, -1); break;
+      case "ArrowDown": handleMove(0, 1); break;
+      case "ArrowLeft": handleMove(-1, 0); break;
+      case "ArrowRight": handleMove(1, 0); break;
+    }
+  });
+
+  function resetGame() {
+    startGame();
+  }
+
+  function loadLeaderboard() {
+    const best = localStorage.getItem("lab_best_time_" + currentLevel);
+    bestTimeSpan.textContent = best ? best + "s" : "—";
+  }
+
+  function saveLeaderboard() {
+    const best = localStorage.getItem("lab_best_time_" + currentLevel);
+    if (!best || timer < best) {
+      localStorage.setItem("lab_best_time_" + currentLevel, timer);
+    }
+    loadLeaderboard();
+  }
+</script>
+
+</body>
+</html>
